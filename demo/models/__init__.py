@@ -2,9 +2,10 @@
 
 from .student import Student
 from .community import Community
-from .course import Course
+from .course import Course, CourseTask, CourseChapter
 from .relations import CommunityCompletedCourse, CommunityWishCourse, CompletedCourse, WishCourse
 from .similarity import StudentSimilarity, CourseSimilarity
 from .student_profile import StudentProfile
 from .message import Message
-from .home_student_similarity import HomoStudentSimilarity
+from .homo_student_similarity import HomoStudentSimilarity
+from .notifications import CommunityJoinRequest

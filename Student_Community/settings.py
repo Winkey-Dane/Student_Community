@@ -77,11 +77,20 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'learning_community',
-        'USER': 'csj',
+        'USER': 'ms',
         'PASSWORD': '123456',
-        'HOST': '113.45.166.63',  # 或域名
+        'HOST': '120.26.228.25',  # 或域名
         'PORT': '3306',
     }
+
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.mysql',
+    #     'NAME': 'learning_community',
+    #     'USER': 'csj',
+    #     'PASSWORD': '123456',
+    #     'HOST': '113.45.166.63',  # 或域名
+    #     'PORT': '3306',
+    # }
 }
 
 # Password validation

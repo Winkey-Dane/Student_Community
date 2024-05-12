@@ -4,11 +4,12 @@ from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db.models import Avg, Count, F
 from django.db import transaction
+from demo.models.relations import CommunityCompletedCourse, CommunityWishCourse
 
 
 class Community(models.Model):
     name = models.CharField(max_length=200)
-    description = models.TextField()
+    description = models.TextField(default='null')
     gender_ratio = models.FloatField(default=0.5, validators=[MaxValueValidator(1), MinValueValidator(0)])  # 性别比例字段
     learning_style = models.FloatField(default=0.0, validators=[MaxValueValidator(1), MinValueValidator(0)])  # 学习风格
     activity_level = models.FloatField(default=0.0, validators=[MaxValueValidator(1), MinValueValidator(0)])  # 活跃度
@@ -29,12 +30,13 @@ class Community(models.Model):
     def __str__(self):
         return f"Community {self.name}"
 
+    @transaction.atomic
     def update_communities_attributes(self):
         # 计算性别比例
         male_members_count = self.members.filter(gender=1).count()
-        total_members_count = self.members.count()
+        total_members_count = self.members.count() - self.members.filter(gender=2).count()
         # 防止分母为0的情况
-        self.gender_ratio = male_members_count / total_members_count if total_members_count else 0
+        self.gender_ratio = male_members_count / total_members_count if total_members_count else 0.5
 
         # 计算活跃度的平均值
         self.activity_level = self.members.aggregate(Avg('activity_level'))['activity_level__avg'] or 0
@@ -51,37 +53,26 @@ class Community(models.Model):
         # 保存更新
         self.save()
 
+    def update_course_ratios(self, course_set, model_class):
+        for member in self.members.all():
+            for course in getattr(member, course_set).all():
+                community_course, created = model_class.objects.get_or_create(
+                    community=self,
+                    course=course,
+                    defaults={'member_ratio': 0.0}
+                )
+                member_count = self.members.filter(**{f'{course_set}__course_id': course.course_id}).count()
+                community_course.member_ratio = (
+                            member_count / self.members.count()) if self.members.count() > 0 else 0.0
+                community_course.save()
+
+    @transaction.atomic
     def update_courses(self):
-        # 更新所有课程的成员占比
-        current_member_count = self.members.count()  # 使用当前成员数进行计算
+        # 更新已完成课程的成员占比
+        self.update_course_ratios('completed_courses', CommunityCompletedCourse)
 
-        # 首先处理已完成课程的成员占比
-        current_completed_courses = self.completed_courses.all()
-        for member in self.members.all():
-            for course in member.completed_courses.all():
-                community_course, created = self.communitycompletedcourse_set.get_or_create(course=course, defaults={
-                    'member_ratio': 0})
-                if created:
-                    current_completed_courses.add(course)
-                members_completed = self.members.filter(completed_courses__id=course.id).count()
-                # 防止除以零的情况
-                community_course.member_ratio = (
-                        members_completed / current_member_count) if current_member_count > 0 else 0
-                community_course.save()
-
-        # 然后处理愿望课程的成员占比
-        current_wish_courses = self.wish_courses.all()
-        for member in self.members.all():
-            for course in member.wish_courses.all():
-                community_course, created = self.communitywishcourse_set.get_or_create(course=course,
-                                                                                       defaults={'member_ratio': 0})
-                if created:
-                    current_wish_courses.add(course)
-                members_wishing = self.members.filter(wish_courses__id=course.id).count()
-                # 防止除以零的情况
-                community_course.member_ratio = (
-                        members_wishing / current_member_count) if current_member_count > 0 else 0
-                community_course.save()
+        # 更新愿望课程的成员占比
+        self.update_course_ratios('wish_courses', CommunityWishCourse)
 
     @transaction.atomic
     def update_all_attributes(self):
