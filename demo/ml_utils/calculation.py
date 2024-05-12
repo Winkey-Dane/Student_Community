@@ -6,7 +6,7 @@ from demo.models import Student, Course, StudentSimilarity, CourseSimilarity, Co
 
 
 class RecommenderSystem:
-    def __init__(self, num_factors=64, num_epochs=10, top_n=10):
+    def __init__(self, num_factors=64, num_epochs=10, top_n=50):
         self.num_factors = num_factors
         self.num_epochs = num_epochs
         self.top_n = top_n
@@ -25,22 +25,42 @@ class RecommenderSystem:
         def forward(self, user, item):
             return (self.user_factors(user) * self.item_factors(item)).sum(1)
 
+    # 学习风格距离转相似度函数
+    @staticmethod
+    def cal_learning_style_similarity(style1, style2):  # 计算学习风格相似度
+        # 学习风格已经被编码为整数值
+        distance = abs(style1 - style2)
+        # 计算相似度
+        similarity = 1 / (1 + distance)
+        return similarity
+
     @staticmethod
     def calculate_personal_similarity(student1, student2):
         """计算两个学生间基于个人信息的相似度"""
-        # 性别相似度：异质
+        weight_learning_style = 0.7
+        weight_activity_level = 0.2
+        weight_gender = 0.1
+        # 性别相似度
         gender_similarity = 1 if student1.gender != student2.gender else 0
 
-        # 学习风格相似度：同质
-        learning_style_similarity = 1 if student1.learning_style == student2.learning_style else 0
+        # 学习风格相似度
+        learning_style_similarity = RecommenderSystem.cal_learning_style_similarity(student1.learning_style,
+                                                                                    student2.learning_style)
 
+        # 活跃度相似度
+        activity_level_difference = abs(student1.activity_level - student2.activity_level)
+        max_activity_level_diff = 1  # 活跃度在0到1之间
+        activity_level_similarity = 1 - (activity_level_difference / max_activity_level_diff)
         # 活跃度相似度：平均值接近0.5
-        avg_activity_level = (student1.activity_level + student2.activity_level) / 2
-        activity_similarity = 1 - abs(avg_activity_level - 0.5)  # 越接近0.5，相似度越高
+        # avg_activity_level = (student1.activity_level + student2.activity_level) / 2
+        # activity_similarity = 1 - abs(avg_activity_level - 0.5)  # 越接近0.5，相似度越高
 
-        # 综合相似度平均计算
-        total_similarity = (gender_similarity + learning_style_similarity + activity_similarity) / 3
-
+        # 计算总相似度
+        total_similarity = (
+                weight_learning_style * learning_style_similarity +
+                weight_activity_level * activity_level_similarity +
+                weight_gender * gender_similarity
+        )
         return total_similarity
 
     def compute_top_n_cosine_similarity(self, matrix, batch_size=500):
@@ -124,7 +144,7 @@ class RecommenderSystem:
             for idx, sim_value in zip(sim_indices, sim_values):
                 student2 = self.students[idx]
                 personal_similarity = RecommenderSystem.calculate_personal_similarity(student1, student2)
-                combined_similarity = (sim_value + personal_similarity) / 2
+                combined_similarity = (sim_value + personal_similarity) / 2  # 两种相似度求平均值
                 top_similar_students.append((student2, combined_similarity))  # 存储对象而不是ID
             top_similar_students = sorted(top_similar_students, key=lambda x: x[1], reverse=True)[:self.top_n]
             student_top_n_similarity_dict[student1] = top_similar_students  # 使用对象作为键
@@ -194,7 +214,7 @@ class RecommenderSystem:
 # from demo.models import Student, StudentSimilarity, HomoStudentSimilarity, CourseSimilarity
 # import json
 #
-# # 学习风格距离转相似度函数
+# 学习风格距离转相似度函数
 # def learning_style_similarity(style1, style2):
 #     # 假设学习风格已经被编码为整数值
 #     distance = abs(style1 - style2)

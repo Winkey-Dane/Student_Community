@@ -1,0 +1,77 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">推荐用户</h3>
+        </div>
+        <div class="panel-body">
+            <form method="post" class="form-horizontal">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">姓名</label>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" placeholder="姓名" name="user"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">学生ID</label>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" placeholder="ID" name="id"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">性别</label>
+                    <div class="col-sm-10">
+                        <!--input type="text" class="form-control" placeholder="性别"/-->
+                        <select class="form-control " name="gd">
+                            {#                            <option value="{{ item.0 }}">{{ item.1 }}</option>#}
+                            <option value="2">女</option>
+                            <option value="1">男</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-offset-2 col-sm-10">
+                        <button type="submit" class="btn btn-primary">提交并查找适合共同学习的伙伴</button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add recommended students after your form -->
+    <div class="container">
+        <div class="panel panel-default">
+            <!-- Default panel contents -->
+            <div class="panel-heading">
+                <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                最相似的十个学生列表
+            </div>
+            <!-- Table -->
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>姓名</th>
+                    <th>性别</th>
+                    <th>相似程度</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for item in top_students %}
+                    <tr>
+                        <td>{{ item.student_id }}</td>
+                        <th>{{ item.name }}</th>
+                        <td>{{ item.gender }}</td>
+                        <td>{{ item.similarity }}</td> <!-- 显示相似度 -->
+                    </tr>
+                {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
