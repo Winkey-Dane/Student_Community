@@ -10,10 +10,12 @@ from demo.models import Student, WishCourse
 from demo.repositories.student_repository import StudentRepository
 from demo.models.similarity import StudentSimilarity, CourseSimilarity
 from demo.models import Course, Student, WishCourse
+
+
 # from demo.ml_utils.calculation import find_top_similar_students
 
 
-def calculate_course_similarity(student1, student2): # student1为基准用户
+def calculate_course_similarity(student1, student2):  # student1为基准用户
     wish_similarity = 0
     completed_similarity = 0
 
@@ -25,7 +27,7 @@ def calculate_course_similarity(student1, student2): # student1为基准用户
             wish_similarity += similarity_vector.get(str(wish_course_student2.course_id), 0)
 
     # 计算已完成课程的相似度
-    for completed_course_student1 in student1.completed_courses.all(): # 例中stu_id为49只学过一门课 ，所以这个for循环只跑一次
+    for completed_course_student1 in student1.completed_courses.all():  # 例中stu_id为49只学过一门课 ，所以这个for循环只跑一次
         # 获取相似度向量
         similarity_vector = CourseSimilarity.objects.filter(course=completed_course_student1).first().similarity_vector
         # 找到对应的完成课程，计算相似度
@@ -144,6 +146,8 @@ def recommend_by_id(request):
             'name': student_object.name,
             'gender': student_object.get_gender_display(),
             'similarity': top_students[str(student_object.student_id)],  # 获取相似度，注意我们需要将 student_id 转换为字符串
+            'activity_level': student_object.activity_level,
+            'learning_style': student_object.get_learning_style_display(),
         }
         top_students_list.append(student_info)
 
